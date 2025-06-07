@@ -8,6 +8,9 @@ EFD analyzes Emacs Lisp files to extract function definitions and their
 call relationships, then generates DOT format diagrams that can be
 rendered with Graphviz.
 
+### Example output
+![Function Call Diagram](output.png)
+
 ### Usage
 
 ``` elisp
