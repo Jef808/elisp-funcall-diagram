@@ -9,13 +9,13 @@ call relationships, then generates DOT format diagrams that can be
 rendered with Graphviz.
 
 ### Example output
-![Function Call Diagram](output.png)
+![Function Call Diagram](diagram.png)
 
 ### Usage
 
 ``` elisp
 ;; Generate call graph from a file
-(setq call-graph (efd-generate "path/to/your-file.el"))
+(setq call-graph (efd-compile-function-calls "path/to/your-file.el"))
 
 ;; Convert to dot format and write the graph to some file 
 (efd-write-call-graph-dot call-graph "output.dot"

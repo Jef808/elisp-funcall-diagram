@@ -15,19 +15,19 @@
 ;;
 ;;; Commentary:
 ;;
-;;  Generate function call diagram
+;;  Very simple tool to generate function call diagram.
 ;;
 ;;; Code:
 
-(defun efd-generate (file-path)
+(defun efd-compile-function-calls (file-path)
   "Generate a hierarchical call graph for functions in FILE-PATH.
 Returns an alist where each entry is (FUNCTION . CALLED-FUNCTIONS)."
   (let ((functions (efd-extract-functions file-path))
-        (call-graph '()))
+        (function-calls '()))
     (dolist (func functions)
       (let ((calls (efd-find-function-calls func file-path functions)))
-        (push (cons (car func) calls) call-graph)))
-      call-graph))
+        (push (cons (car func) calls) function-calls)))
+      function-calls))
 
 (defun efd-extract-functions (file-path)
   "Extract all function definitions from FILE-PATH.
@@ -67,8 +67,8 @@ FUNCTIONS is a list of such cons cells for all function definitions in the file.
     (end-of-defun)
     (- (point) 1)))
 
-(defun efd-call-graph-to-dot (call-alist &optional options)
-  "Convert call graph to DOT with styling options.
+(defun efd-function-calls-to-dot (function-calls &optional options)
+  "Convert FUNCTION-CALLS to a dot graph with styling options.
 OPTIONS is a plist that can contain:
   :graph-name - Name of the digraph
   :node-color - Color for nodes
@@ -79,37 +79,30 @@ OPTIONS is a plist that can contain:
          (edge-color (or (plist-get options :edge-color) "black"))
          (layout (or (plist-get options :layout) "TB"))
          (dot-lines '()))
-
-    ;; Start the digraph with styling
     (push (format "digraph %s {" graph-name) dot-lines)
     (push (format "  rankdir=%s;" layout) dot-lines)
     (push (format "  node [shape=box, style=\"rounded,filled\", fillcolor=%s];"
                   node-color) dot-lines)
     (push (format "  edge [color=%s];" edge-color) dot-lines)
     (push "" dot-lines)
-
-    ;; Process entries
-    (dolist (entry call-alist)
+    (dolist (entry function-calls)
       (let ((caller (car entry))
             (callees (cdr entry)))
         (if callees
             (dolist (callee callees)
               (push (format "  \"%s\" -> \"%s\";" caller callee) dot-lines))
           (push (format "  \"%s\";" caller) dot-lines))))
-
     (push "" dot-lines)
     (push "}" dot-lines)
-
     (string-join (nreverse dot-lines) "\n")))
 
-;; Utility function to write DOT to file
-(defun efd-write-call-graph-dot (call-alist filename &optional options)
+(defun efd-write-call-graph-dot (function-calls filename &optional options)
   "Write call graph DOT output to a file.
-CALL-ALIST is the function call data.
+FUNCTION-CALLS is the function call data.
 FILENAME is the output file path.
 OPTIONS are passed to call-graph-to-dot-styled."
   (with-temp-file filename
-    (insert (efd-call-graph-to-dot call-alist options))))
+    (insert (efd-function-calls-to-dot function-calls options))))
 
 (provide 'efd)
 ;;; efd.el ends here
