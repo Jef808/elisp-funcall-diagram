@@ -18,9 +18,9 @@ rendered with Graphviz.
 (setq call-graph (efd-generate "path/to/your-file.el"))
 
 ;; Convert to dot format and write the graph to some file 
-(efd--write-call-graph-dot call-graph "output.dot"
-                           '(:graph-name "MyProject"
-                             :node-color "lightgreen"))
+(efd-write-call-graph-dot call-graph "output.dot"
+                          '(:graph-name "MyProject"
+                            :node-color "lightgreen"))
 ```
 
 ### Generate diagram

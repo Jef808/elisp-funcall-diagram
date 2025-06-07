@@ -22,14 +22,14 @@
 (defun efd-generate (file-path)
   "Generate a hierarchical call graph for functions in FILE-PATH.
 Returns an alist where each entry is (FUNCTION . CALLED-FUNCTIONS)."
-  (let ((functions (efd--extract-functions file-path))
+  (let ((functions (efd-extract-functions file-path))
         (call-graph '()))
     (dolist (func functions)
-      (let ((calls (efd--find-function-calls func file-path functions)))
+      (let ((calls (efd-find-function-calls func file-path functions)))
         (push (cons (car func) calls) call-graph)))
       call-graph))
 
-(defun efd--extract-functions (file-path)
+(defun efd-extract-functions (file-path)
   "Extract all function definitions from FILE-PATH.
 Returns a list of (FUNCTION-NAME . START-POS) pairs."
   (with-temp-buffer
@@ -42,15 +42,15 @@ Returns a list of (FUNCTION-NAME . START-POS) pairs."
           (push (cons func-name func-start) functions)))
       (nreverse functions))))
 
-(defun efd--find-function-calls (func-info file-path functions)
+(defun efd-find-function-calls (func-info file-path functions)
   "Find all functions called within FUNC-INFO's definition in FILE-PATH.
 FUNC-INFO is a cons cell (FUNCTION-NAME . START-POS) as returned
-by `efd--extract-functions'.
+by `efd-extract-functions'.
 FUNCTIONS is a list of such cons cells for all function definitions in the file."
   (with-temp-buffer
     (insert-file-contents file-path)
     (goto-char (cdr func-info))
-    (let ((func-end (efd--find-function-end))
+    (let ((func-end (efd-find-function-end))
           (calls '()))
       (while (and (< (point) func-end)
                   (re-search-forward "(\\([^[:space:]()]+\\)" func-end t))
@@ -61,13 +61,13 @@ FUNCTIONS is a list of such cons cells for all function definitions in the file.
               (push potential-call calls))))
       (nreverse calls))))
 
-(defun efd--find-function-end ()
+(defun efd-find-function-end ()
   "Find the end position of the current function definition."
   (save-excursion
     (end-of-defun)
     (- (point) 1)))
 
-(defun efd--call-graph-to-dot (call-alist &optional options)
+(defun efd-call-graph-to-dot (call-alist &optional options)
   "Convert call graph to DOT with styling options.
 OPTIONS is a plist that can contain:
   :graph-name - Name of the digraph
@@ -103,13 +103,13 @@ OPTIONS is a plist that can contain:
     (string-join (nreverse dot-lines) "\n")))
 
 ;; Utility function to write DOT to file
-(defun efd--write-call-graph-dot (call-alist filename &optional options)
+(defun efd-write-call-graph-dot (call-alist filename &optional options)
   "Write call graph DOT output to a file.
 CALL-ALIST is the function call data.
 FILENAME is the output file path.
 OPTIONS are passed to call-graph-to-dot-styled."
   (with-temp-file filename
-    (insert (efd--call-graph-to-dot call-alist options))))
+    (insert (efd-call-graph-to-dot call-alist options))))
 
 (provide 'efd)
 ;;; efd.el ends here
