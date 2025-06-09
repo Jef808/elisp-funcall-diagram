@@ -19,6 +19,8 @@
 ;;
 ;;; Code:
 
+(load (expand-file-name "efd-test.el"))
+
 (defun efd-compile-function-calls (file-paths)
   "Generate a list of function call for functions in FILE-PATHS.
 FILE-PATHS can be a single file path string or a list of file paths.
@@ -63,7 +65,7 @@ FUNCTIONS is a list of such tuples."
   (let ((file-path (car func-info))
         (func-name (cadr func-info))
         (func-start (cddr func-info))
-        (func-names (mapcar (lambda (entry) (cadr entry)) functions)))
+        (func-names (mapcar 'cadr functions)))
     (with-temp-buffer
       (insert-file-contents file-path)
       (goto-char func-start)
@@ -84,8 +86,8 @@ FUNCTIONS is a list of such tuples."
     (end-of-defun)
     (- (point) 1)))
 
-(defun efd-function-calls-to-dot (function-calls &optional options)
-  "Convert FUNCTION-CALLS to a dot graph with styling options.
+(defun efd-function-calls-to-dot (file-function-calls &optional options)
+  "Convert FILE-FUNCTION-CALLS to a dot graph with styling options.
 OPTIONS is a plist that can contain:
   :graph-name - Name of the digraph
   :node-color - Color for nodes
@@ -95,21 +97,32 @@ OPTIONS is a plist that can contain:
          (node-color (or (plist-get options :node-color) "lightgreen"))
          (edge-color (or (plist-get options :edge-color) "black"))
          (layout (or (plist-get options :layout) "LR"))
-         (dot-lines '()))
+         (dot-lines '())
+         (file-counter 0))
     (push (format "digraph %s {" graph-name) dot-lines)
     (push (format "  rankdir=%s;" layout) dot-lines)
     (push (format "  node [shape=box, style=\"rounded,filled\", fillcolor=%s];"
                   node-color) dot-lines)
     (push (format "  edge [color=%s];" edge-color) dot-lines)
     (push "" dot-lines)
-    (dolist (entry function-calls)
-      (let ((caller (car entry))
-            (callees (cdr entry)))
-        (if callees
+    (dolist (entry file-function-calls)
+      (let ((file-path (car entry))
+            (func-names (mapcar 'car (cdr entry))))
+        (push (format "  subgraph cluster_%d {" file-counter) dot-lines)
+        (setq file-counter (1+ file-counter))
+        (push (format "    label=\"%s\";" (file-name-nondirectory file-path)) dot-lines)
+        (push "    color=lightgrey;" dot-lines)
+        (dolist (func-name func-names)
+          (push (format "    \"%s\";" func-name) dot-lines)))
+      (push "  }" dot-lines)
+      (push "" dot-lines))
+    (dolist (entry file-function-calls)
+      (let ((func-calls (cdr entry)))
+        (dolist (caller-callees func-calls)
+          (let ((caller (car caller-callees))
+                (callees (cdr caller-callees)))
             (dolist (callee callees)
-              (push (format "  \"%s\" -> \"%s\";" caller callee) dot-lines))
-          (push (format "  \"%s\";" caller) dot-lines))))
-    (push "" dot-lines)
+              (push (format "  \"%s\" -> \"%s\";" caller callee) dot-lines))))))
     (push "}" dot-lines)
     (string-join (nreverse dot-lines) "\n")))
 
@@ -120,6 +133,10 @@ FILENAME is the output file path.
 OPTIONS are passed to call-graph-to-dot-styled."
   (with-temp-file filename
     (insert (efd-function-calls-to-dot function-calls options))))
+
+(defun efd-run-test ()
+  "Run test for efd functions."
+  (efd-test))
 
 (provide 'efd)
 ;;; efd.el ends here
